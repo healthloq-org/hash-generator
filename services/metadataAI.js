@@ -14,7 +14,9 @@ const IMAGE_MIME = {
   ".webp": "image/webp",
 };
 
-const MAX_TEXT_BYTES = 100 * 1024; // 100 KB cap for text files
+const MAX_TEXT_BYTES  = 100 * 1024;       // 100 KB cap for text files
+const MAX_PDF_BYTES   = 20 * 1024 * 1024; // 20 MB cap for PDFs
+const MAX_IMAGE_BYTES =  5 * 1024 * 1024; // 5 MB cap for images
 
 /**
  * Build the content blocks to send to Claude for a given file path.
@@ -29,6 +31,10 @@ function buildFileContent(filePath) {
   if (ext === ".pdf") {
     try {
       const data = fs.readFileSync(filePath);
+      if (data.length > MAX_PDF_BYTES) {
+        logger.warn({ filePath, bytes: data.length }, "metadataAI: PDF exceeds size limit — using filename only");
+        return [{ type: "text", text: `${intro} (PDF too large to analyse: ${Math.round(data.length / 1024 / 1024)} MB)` }];
+      }
       return [
         { type: "text", text: intro },
         {
@@ -50,6 +56,10 @@ function buildFileContent(filePath) {
   if (IMAGE_MIME[ext]) {
     try {
       const data = fs.readFileSync(filePath);
+      if (data.length > MAX_IMAGE_BYTES) {
+        logger.warn({ filePath, bytes: data.length }, "metadataAI: image exceeds size limit — using filename only");
+        return [{ type: "text", text: `${intro} (image too large to analyse: ${Math.round(data.length / 1024 / 1024)} MB)` }];
+      }
       return [
         { type: "text", text: intro },
         {
@@ -145,7 +155,7 @@ BATCHES: ${JSON.stringify(batches.map((b) => ({ id: b.id, name: b.name, org: b.o
         ],
       },
     ],
-  });
+  }, { timeout: 30_000 });
 
   logger.debug(
     {

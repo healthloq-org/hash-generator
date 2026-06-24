@@ -68,7 +68,7 @@ exports.getFolderOverviewData = async (req, res) => {
   const docData = await getData("documentVerificationData");
   let newData = [];
   if (folderPath) {
-    docData.filter((doc) => {
+    docData.forEach((doc) => {
       if (doc.path.includes(folderPath)) {
         const lastSlashIndex = doc.path.lastIndexOf("/");
         const normalizedPath =
@@ -76,9 +76,9 @@ exports.getFolderOverviewData = async (req, res) => {
             ? doc.path.substring(0, lastSlashIndex)
             : doc.path;
         if (
-          normalizedPath === folderPath.endsWith("/")
+          normalizedPath === (folderPath.endsWith("/")
             ? folderPath.slice(0, -1)
-            : folderPath
+            : folderPath)
         ) {
           newData.push(doc);
         }
@@ -334,7 +334,9 @@ exports.verifyDocuments = async (req, res) => {
         .filter(Boolean);
 
       const oldData = await getData("documentVerificationData");
-      await setData([...oldData, ...mergeData], "documentVerificationData");
+      // Replace old entries for re-verified files rather than appending unconditionally
+      const mergePathSet = new Set(mergeData.map((d) => d.path));
+      await setData([...oldData.filter((d) => !mergePathSet.has(d.path)), ...mergeData], "documentVerificationData");
     }
 
     // 4. Stream CSV to File
@@ -476,7 +478,7 @@ exports.getVerifyDocumentCount = async (req, res) => {
     let newData = [];
 
     if (path) {
-      docData.filter((doc) => {
+      docData.forEach((doc) => {
         if (doc.path.includes(path)) {
           const lastSlashIndex = doc.path.lastIndexOf("/");
           const normalizedPath =
@@ -484,7 +486,7 @@ exports.getVerifyDocumentCount = async (req, res) => {
               ? doc.path.substring(0, lastSlashIndex)
               : doc.path;
           if (
-            normalizedPath === path.endsWith("/") ? path.slice(0, -1) : path
+            normalizedPath === (path.endsWith("/") ? path.slice(0, -1) : path)
           ) {
             newData.push(doc);
           }

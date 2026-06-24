@@ -1,5 +1,6 @@
 const axios = require("axios");
 const axiosRetry = require("axios-retry").default;
+const logger = require("../logger");
 
 // Retry up to 3 times on network errors or 5xx responses with exponential backoff
 axiosRetry(axios, {
@@ -14,7 +15,7 @@ exports.syncHash = async (data) => {
   let response = null;
   try {
     if (data.hashList.length || data.deletedHashList.length) {
-      console.log("Start syncing with healthloq db...");
+      logger.info("syncHash: starting sync with HealthLOQ");
       response = await axios.post(
         `${process.env.REACT_APP_HEALTHLOQ_API_BASE_URL}/document-hash/createOrDelete`,
         data,
@@ -25,8 +26,8 @@ exports.syncHash = async (data) => {
         }
       );
       if (response?.data.status === "1")
-        console.log("Hash synced with healthloq successful");
-      else console.log(response?.data.message);
+        logger.info("syncHash: hashes synced successfully");
+      else logger.warn({ message: response?.data.message }, "syncHash: API returned non-success status");
       if (response?.data?.status === "2") {
         io.sockets.emit("docUploadLimitExceededError", {
           errorMsg: response?.data?.message,
@@ -41,9 +42,10 @@ exports.syncHash = async (data) => {
     }
   } catch (error) {
     if (error.response) {
-      console.log(`API Error: ${error.response.status} - ${error.response.statusText}`)
+      logger.error({ status: error.response.status, statusText: error.response.statusText }, "syncHash: API error");
+    } else {
+      logger.error({ err: error }, "syncHash: unexpected error");
     }
-    console.log("sync hash with healthloq catch block", error);
   }
   return response?.data?.status || "0";
 };

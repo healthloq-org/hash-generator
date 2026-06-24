@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HealthLOQ Pre-Install Check — 6/24/2026</title>
+<style>
+*{box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:980px;margin:40px auto;padding:0 24px;color:#1a202c;background:#f7fafc}
+h1{color:#2b6cb0;margin-bottom:4px}
+.sub{color:#718096;margin-bottom:20px;font-size:.9em}
+.summary{padding:13px 18px;border-radius:8px;margin-bottom:22px;font-size:1.05em;font-weight:600}
+.summary.pass{background:#c6f6d5;color:#22543d;border-left:5px solid #38a169}
+.summary.fail{background:#fed7d7;color:#742a2a;border-left:5px solid #e53e3e}
+.summary.warn{background:#fefcbf;color:#744210;border-left:5px solid #d69e2e}
+dl{display:grid;grid-template-columns:max-content 1fr;gap:5px 16px;background:#fff;padding:14px 20px;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.1);margin-bottom:22px;font-size:.85em}
+dt{color:#718096;font-weight:600;white-space:nowrap}
+dd{margin:0;word-break:break-all}
+table{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.1);margin-bottom:28px}
+th{background:#2b6cb0;color:#fff;padding:10px 16px;text-align:left;font-size:.82em;font-weight:600}
+td{padding:8px 16px;border-bottom:1px solid #e2e8f0;vertical-align:top;font-size:.83em}
+tr:last-child td{border-bottom:none}
+.sec td{background:#ebf4ff;color:#2c5282;font-weight:700;font-size:.75em;text-transform:uppercase;letter-spacing:.6px;padding:6px 16px}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.74em;font-weight:700;letter-spacing:.3px;white-space:nowrap}
+.badge.PASS{background:#c6f6d5;color:#22543d}
+.badge.FAIL{background:#fed7d7;color:#742a2a}
+.badge.WARN{background:#fefcbf;color:#744210}
+.badge.SKIP{background:#e2e8f0;color:#718096}
+.fix{margin-top:6px;padding:7px 10px;background:#f7fafc;border-left:3px solid #a0aec0;font-family:'SFMono-Regular',Consolas,monospace;font-size:.8em;white-space:pre-wrap;color:#4a5568}
+footer{text-align:center;color:#a0aec0;font-size:.75em;margin:36px 0 16px}
+@media print{body{background:#fff}table{box-shadow:none;border:1px solid #e2e8f0}}
+</style>
+</head>
+<body>
+<h1>HealthLOQ Pre-Installation Check</h1>
+<p class="sub">Generated: 6/24/2026, 10:41:26 AM &nbsp;|&nbsp; Safe to share — all sensitive values are masked</p>
+<div class="summary fail">✗  3 failure(s), 0 warning(s) — resolve failures before installing</div>
+<dl><dt>Machine</dt><dd>KSLT</dd><dt>Platform</dt><dd>win32 x64 (10.0.26200)</dd><dt>Node.js</dt><dd>v24.14.0</dd><dt>App root</dt><dd>C:\GitHub\hash-generator</dd><dt>API URL</dt><dd>https://api.healthloq.com</dd><dt>Generated</dt><dd>Wed Jun 24 2026 10:41:26 GMT-0600 (Mountain Daylight Time)</dd></dl>
+<table>
+  <thead><tr>
+    <th style="width:68px">Status</th>
+    <th style="width:240px">Check</th>
+    <th>Result / Remediation</th>
+  </tr></thead>
+  <tbody><tr class="sec"><td colspan="3">Node.js</td></tr><tr>
+        <td><span class="badge PASS">PASS</span></td>
+        <td>Node.js version</td>
+        <td>v24.14.0  (minimum: v18)</td>
+      </tr><tr>
+        <td><span class="badge PASS">PASS</span></td>
+        <td>node_modules installed</td>
+        <td>C:\GitHub\hash-generator\node_modules</td>
+      </tr><tr>
+        <td><span class="badge PASS">PASS</span></td>
+        <td>Native module (better-sqlite3)</td>
+        <td>loads correctly</td>
+      </tr><tr class="sec"><td colspan="3">Config</td></tr><tr>
+        <td><span class="badge PASS">PASS</span></td>
+        <td>.env file present</td>
+        <td>C:\GitHub\hash-generator\.env</td>
+      </tr><tr>
+        <td><span class="badge PASS">PASS</span></td>
+        <td>HealthLOQ API base URL</td>
+        <td>https://api.healthloq.com</td>
+      </tr><tr>
+        <td><span class="badge FAIL">FAIL</span></td>
+        <td>HealthLOQ JWT token</td>
+        <td>REACT_APP_JWT_TOKEN is not set<div class="fix">Set REACT_APP_JWT_TOKEN in .env.<br>Obtain the JWT token from your HealthLOQ partner portal.</div></td>
+      </tr><tr>
+        <td><span class="badge PASS">PASS</span></td>
+        <td>Document watch folder (ROOT_FOLDER_PATH)</td>
+        <td>./documents</td>
+      </tr><tr>
+        <td><span class="badge SKIP">SKIP</span></td>
+        <td>SMTP (email alerts)</td>
+        <td>not configured — alert emails will be disabled</td>
+      </tr><tr>
+        <td><span class="badge SKIP">SKIP</span></td>
+        <td>Anthropic API key (AI features)</td>
+        <td>not set — AI metadata auto-populate will be disabled</td>
+      </tr><tr class="sec"><td colspan="3">Local</td></tr><tr>
+        <td><span class="badge FAIL">FAIL</span></td>
+        <td>Port 8003 available</td>
+        <td>port 8003 is already bound by another process<div class="fix">Windows: netstat -ano | findstr :8003   then taskkill /PID &lt;pid&gt; /F<br>Mac/Linux: lsof -i :8003   then kill &lt;pid&gt;<br>Or set PORT= to a different number in .env.</div></td>
+      </tr><tr>
+        <td><span class="badge FAIL">FAIL</span></td>
+        <td>Watch folder exists</td>
+        <td>&quot;./documents&quot; does not exist<div class="fix">Create the directory or update ROOT_FOLDER_PATH in .env to a path that exists.</div></td>
+      </tr><tr>
+        <td><span class="badge PASS">PASS</span></td>
+        <td>scratch/ directory writable</td>
+        <td>C:\GitHub\hash-generator\scratch</td>
+      </tr><tr>
+        <td><span class="badge PASS">PASS</span></td>
+        <td>public/exports/ writable</td>
+        <td>C:\GitHub\hash-generator\public\exports</td>
+      </tr><tr class="sec"><td colspan="3">API</td></tr><tr>
+        <td><span class="badge PASS">PASS</span></td>
+        <td>DNS: api.healthloq.com</td>
+        <td>→ 20.40.202.9</td>
+      </tr><tr>
+        <td><span class="badge PASS">PASS</span></td>
+        <td>TCP api.healthloq.com:443</td>
+        <td>connection established</td>
+      </tr><tr>
+        <td><span class="badge SKIP">SKIP</span></td>
+        <td>API authentication (JWT)</td>
+        <td>JWT token not configured</td>
+      </tr></tbody>
+</table>
+<footer>HealthLOQ Document Protection &nbsp;|&nbsp; Pre-installation diagnostic report</footer>
+</body>
+</html>

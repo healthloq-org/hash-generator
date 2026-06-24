@@ -318,7 +318,11 @@ exports.getSyncData = async (syncedData = null) => {
 
     const syncedHashes = new Set(syncedData.map((item) => item?.hash));
     const latestHashes = new Set(latestData.map((item) => item?.hash));
-    const deletedHashList = [];
+    // Hashes whose file no longer exists on disk should be removed from HealthLOQ
+    const deletedHashList = syncedData
+      .filter((item) => item?.hash && item?.path && !fs.existsSync(item.path))
+      .map((item) => item.hash);
+    const deletedHashSet = new Set(deletedHashList);
     let hashList = latestData
       .filter((item) => !syncedHashes.has(item.hash))
       .map((item) => item.hash);
@@ -330,7 +334,7 @@ exports.getSyncData = async (syncedData = null) => {
     }
 
     const updateData = latestData.filter((d) => !syncedHashes.has(d.hash));
-    let newData = syncedData.concat(updateData);
+    let newData = syncedData.filter((item) => !deletedHashSet.has(item?.hash)).concat(updateData);
     let syncStatus = null;
 
     if (hashList.length || deletedHashList.length) {
@@ -338,6 +342,7 @@ exports.getSyncData = async (syncedData = null) => {
         deletedHashList,
         hashList,
         hashCount: todayHashLimit + hashList.length,
+        organization_id: subscriptionData?.organization?.id || null,
       });
       if (syncStatus === "1") {
         const now = new Date().toISOString();
@@ -379,7 +384,7 @@ exports.getSyncData = async (syncedData = null) => {
 
     if (hasMoreFiles && syncStatus !== "0") {
       localStorage.setItem("lastSyncedFile", latestData?.[latestData.length - 1]?.fileName);
-      this.getSyncData(newData);
+      await this.getSyncData(newData);
     } else {
       localStorage.removeItem("lastSyncedFile");
       global.isGetSyncDataProcessStart = false;
