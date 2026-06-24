@@ -33,9 +33,9 @@ footer{text-align:center;color:#a0aec0;font-size:.75em;margin:36px 0 16px}
 </head>
 <body>
 <h1>HealthLOQ Pre-Installation Check</h1>
-<p class="sub">Generated: 6/24/2026, 10:41:26 AM &nbsp;|&nbsp; Safe to share — all sensitive values are masked</p>
-<div class="summary fail">✗  3 failure(s), 0 warning(s) — resolve failures before installing</div>
-<dl><dt>Machine</dt><dd>KSLT</dd><dt>Platform</dt><dd>win32 x64 (10.0.26200)</dd><dt>Node.js</dt><dd>v24.14.0</dd><dt>App root</dt><dd>C:\GitHub\hash-generator</dd><dt>API URL</dt><dd>https://api.healthloq.com</dd><dt>Generated</dt><dd>Wed Jun 24 2026 10:41:26 GMT-0600 (Mountain Daylight Time)</dd></dl>
+<p class="sub">Generated: 6/24/2026, 2:42:24 PM &nbsp;|&nbsp; Safe to share — all sensitive values are masked</p>
+<div class="summary fail">✗  2 failure(s), 0 warning(s) — resolve failures before installing</div>
+<dl><dt>Machine</dt><dd>KSLT</dd><dt>Platform</dt><dd>win32 x64 (10.0.26200)</dd><dt>Node.js</dt><dd>v24.14.0</dd><dt>App root</dt><dd>c:\GitHub\hash-generator</dd><dt>API URL</dt><dd>https://api.healthloq.com</dd><dt>Generated</dt><dd>Wed Jun 24 2026 14:42:24 GMT-0600 (Mountain Daylight Time)</dd></dl>
 <table>
   <thead><tr>
     <th style="width:68px">Status</th>
@@ -49,15 +49,15 @@ footer{text-align:center;color:#a0aec0;font-size:.75em;margin:36px 0 16px}
       </tr><tr>
         <td><span class="badge PASS">PASS</span></td>
         <td>node_modules installed</td>
-        <td>C:\GitHub\hash-generator\node_modules</td>
+        <td>c:\GitHub\hash-generator\node_modules</td>
       </tr><tr>
         <td><span class="badge PASS">PASS</span></td>
         <td>Native module (better-sqlite3)</td>
         <td>loads correctly</td>
       </tr><tr class="sec"><td colspan="3">Config</td></tr><tr>
         <td><span class="badge PASS">PASS</span></td>
-        <td>.env file present</td>
-        <td>C:\GitHub\hash-generator\.env</td>
+        <td>Config file found</td>
+        <td>c:\GitHub\hash-generator\.env</td>
       </tr><tr>
         <td><span class="badge PASS">PASS</span></td>
         <td>HealthLOQ API base URL</td>
@@ -79,9 +79,9 @@ footer{text-align:center;color:#a0aec0;font-size:.75em;margin:36px 0 16px}
         <td>Anthropic API key (AI features)</td>
         <td>not set — AI metadata auto-populate will be disabled</td>
       </tr><tr class="sec"><td colspan="3">Local</td></tr><tr>
-        <td><span class="badge FAIL">FAIL</span></td>
+        <td><span class="badge PASS">PASS</span></td>
         <td>Port 8003 available</td>
-        <td>port 8003 is already bound by another process<div class="fix">Windows: netstat -ano | findstr :8003   then taskkill /PID &lt;pid&gt; /F<br>Mac/Linux: lsof -i :8003   then kill &lt;pid&gt;<br>Or set PORT= to a different number in .env.</div></td>
+        <td>not in use</td>
       </tr><tr>
         <td><span class="badge FAIL">FAIL</span></td>
         <td>Watch folder exists</td>
@@ -89,15 +89,15 @@ footer{text-align:center;color:#a0aec0;font-size:.75em;margin:36px 0 16px}
       </tr><tr>
         <td><span class="badge PASS">PASS</span></td>
         <td>scratch/ directory writable</td>
-        <td>C:\GitHub\hash-generator\scratch</td>
+        <td>c:\GitHub\hash-generator\scratch</td>
       </tr><tr>
         <td><span class="badge PASS">PASS</span></td>
         <td>public/exports/ writable</td>
-        <td>C:\GitHub\hash-generator\public\exports</td>
+        <td>c:\GitHub\hash-generator\public\exports</td>
       </tr><tr class="sec"><td colspan="3">API</td></tr><tr>
         <td><span class="badge PASS">PASS</span></td>
         <td>DNS: api.healthloq.com</td>
-        <td>→ 20.40.202.9</td>
+        <td>→ 104.21.80.254</td>
       </tr><tr>
         <td><span class="badge PASS">PASS</span></td>
         <td>TCP api.healthloq.com:443</td>

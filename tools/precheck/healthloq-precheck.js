@@ -25,7 +25,11 @@ const path      = require("path");
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const APP_ROOT        = path.resolve(process.argv[2] || path.join(__dirname, "..", ".."));
+// APP_ROOT may be "none" (pre-install mode: scripts sent standalone, app not yet installed)
+const APP_ROOT_ARG    = process.argv[2] || "";
+const APP_ROOT        = (!APP_ROOT_ARG || APP_ROOT_ARG === "none")
+  ? null
+  : path.resolve(APP_ROOT_ARG);
 const MIN_NODE_MAJOR  = 18;
 const TCP_TIMEOUT_MS  = 8_000;
 const HTTP_TIMEOUT_MS = 15_000;
@@ -152,28 +156,33 @@ function checkNodeEnvironment() {
       `Minimum required is v${MIN_NODE_MAJOR}. Download the latest LTS:\nhttps://nodejs.org/en/download/\nThen open a new terminal and run this check again.`);
   }
 
-  // node_modules
-  const nmDir = path.join(APP_ROOT, "node_modules");
-  if (fs.existsSync(nmDir)) {
-    record("Node.js", "node_modules installed", "PASS", nmDir);
+  // node_modules (skip in pre-install mode)
+  if (!APP_ROOT) {
+    record("Node.js", "node_modules installed", "SKIP", "pre-install mode — app not yet installed");
+    record("Node.js", "Native module (better-sqlite3)", "SKIP", "pre-install mode — app not yet installed");
   } else {
-    record("Node.js", "node_modules installed", "FAIL",
-      "directory not found",
-      `Open a terminal in the app folder and run:\n  cd "${APP_ROOT}"\n  npm install`);
-  }
+    const nmDir = path.join(APP_ROOT, "node_modules");
+    if (fs.existsSync(nmDir)) {
+      record("Node.js", "node_modules installed", "PASS", nmDir);
+    } else {
+      record("Node.js", "node_modules installed", "FAIL",
+        "directory not found",
+        `Open a terminal in the app folder and run:\n  cd "${APP_ROOT}"\n  npm install`);
+    }
 
-  // better-sqlite3 native module — the most common post-install breakage
-  try {
-    require(path.join(APP_ROOT, "node_modules", "better-sqlite3"));
-    record("Node.js", "Native module (better-sqlite3)", "PASS", "loads correctly");
-  } catch (e) {
-    const msg   = (e.message || String(e)).split("\n")[0];
-    const isAbi = /NODE_MODULE_VERSION|was compiled against|invalid ELF|not a valid Win32/i.test(msg);
-    record("Node.js", "Native module (better-sqlite3)", "FAIL",
-      msg,
-      isAbi
-        ? `Node.js was updated after the app was installed. Run:\n  cd "${APP_ROOT}"\n  npm rebuild better-sqlite3\n\nIf that fails:\n  npm install\n\nWindows: if you see "MSBuild not found", install the Visual C++ Redistributable:\n  https://aka.ms/vs/17/release/vc_redist.x64.exe\nthen retry npm rebuild.\n\nmacOS: if you see xcrun errors:\n  xcode-select --install\nthen retry npm rebuild.`
-        : `Run:\n  cd "${APP_ROOT}"\n  npm rebuild better-sqlite3\n\nIf that fails:\n  npm install`);
+    // better-sqlite3 native module — the most common post-install breakage
+    try {
+      require(path.join(APP_ROOT, "node_modules", "better-sqlite3"));
+      record("Node.js", "Native module (better-sqlite3)", "PASS", "loads correctly");
+    } catch (e) {
+      const msg   = (e.message || String(e)).split("\n")[0];
+      const isAbi = /NODE_MODULE_VERSION|was compiled against|invalid ELF|not a valid Win32/i.test(msg);
+      record("Node.js", "Native module (better-sqlite3)", "FAIL",
+        msg,
+        isAbi
+          ? `Node.js was updated after the app was installed. Run:\n  cd "${APP_ROOT}"\n  npm rebuild better-sqlite3\n\nIf that fails:\n  npm install\n\nWindows: if you see "MSBuild not found", install the Visual C++ Redistributable:\n  https://aka.ms/vs/17/release/vc_redist.x64.exe\nthen retry npm rebuild.\n\nmacOS: if you see xcrun errors:\n  xcode-select --install\nthen retry npm rebuild.`
+          : `Run:\n  cd "${APP_ROOT}"\n  npm rebuild better-sqlite3\n\nIf that fails:\n  npm install`);
+    }
   }
 }
 
@@ -182,13 +191,21 @@ function checkNodeEnvironment() {
 function checkConfiguration(env) {
   section("Configuration (.env)");
 
-  const envPath = path.join(APP_ROOT, ".env");
-  if (fs.existsSync(envPath)) {
-    record("Config", ".env file present", "PASS", envPath);
+  // envPath is resolved in main() and passed down via the env object's source
+  const localEnvExists = [
+    path.join(__dirname, "precheck.env"),
+    path.join(__dirname, ".env"),
+    ...(APP_ROOT ? [path.join(APP_ROOT, ".env")] : []),
+  ].find((p) => fs.existsSync(p));
+
+  if (localEnvExists) {
+    record("Config", "Config file found", "PASS", localEnvExists);
   } else {
-    record("Config", ".env file present", "WARN",
-      ".env not found — using system environment variables only",
-      `Copy .env.example to .env in:\n  ${APP_ROOT}\nthen fill in the values.`);
+    record("Config", "Config file found", "WARN",
+      "No .env or precheck.env found — using system environment variables only",
+      APP_ROOT
+        ? `Copy .env.example to .env in:\n  ${APP_ROOT}\nthen fill in the values.`
+        : `Create a precheck.env file in:\n  ${__dirname}\nwith at least:\n  REACT_APP_HEALTHLOQ_API_BASE_URL=https://api.healthloq.com\n  REACT_APP_JWT_TOKEN=your-token-here\n  ROOT_FOLDER_PATH=C:\\your\\documents`);
   }
 
   // Required
@@ -267,32 +284,36 @@ async function checkLocalResources(env) {
     }
   }
 
-  // scratch/ writable (SQLite database lives here)
-  const scratchDir = path.join(APP_ROOT, "scratch");
-  const scratchTmp = path.join(scratchDir, ".precheck-tmp");
-  try {
-    if (!fs.existsSync(scratchDir)) fs.mkdirSync(scratchDir, { recursive: true });
-    fs.writeFileSync(scratchTmp, "ok");
-    fs.unlinkSync(scratchTmp);
-    record("Local", "scratch/ directory writable", "PASS", scratchDir);
-  } catch (e) {
-    record("Local", "scratch/ directory writable", "FAIL",
-      e.message,
-      `The app stores its SQLite database in scratch/.\nGrant write permission to:\n  ${scratchDir}`);
-  }
+  // scratch/ and public/exports/ — only checkable when app is installed
+  if (!APP_ROOT) {
+    record("Local", "scratch/ directory writable", "SKIP", "pre-install mode — app not yet installed");
+    record("Local", "public/exports/ writable",    "SKIP", "pre-install mode — app not yet installed");
+  } else {
+    const scratchDir = path.join(APP_ROOT, "scratch");
+    const scratchTmp = path.join(scratchDir, ".precheck-tmp");
+    try {
+      if (!fs.existsSync(scratchDir)) fs.mkdirSync(scratchDir, { recursive: true });
+      fs.writeFileSync(scratchTmp, "ok");
+      fs.unlinkSync(scratchTmp);
+      record("Local", "scratch/ directory writable", "PASS", scratchDir);
+    } catch (e) {
+      record("Local", "scratch/ directory writable", "FAIL",
+        e.message,
+        `The app stores its SQLite database in scratch/.\nGrant write permission to:\n  ${scratchDir}`);
+    }
 
-  // public/exports/ writable (CSV export)
-  const exportsDir = path.join(APP_ROOT, "public", "exports");
-  const exportsTmp = path.join(exportsDir, ".precheck-tmp");
-  try {
-    if (!fs.existsSync(exportsDir)) fs.mkdirSync(exportsDir, { recursive: true });
-    fs.writeFileSync(exportsTmp, "ok");
-    fs.unlinkSync(exportsTmp);
-    record("Local", "public/exports/ writable", "PASS", exportsDir);
-  } catch (e) {
-    record("Local", "public/exports/ writable", "FAIL",
-      e.message,
-      `Verification CSV exports are written to public/exports/.\nGrant write permission to:\n  ${exportsDir}`);
+    const exportsDir = path.join(APP_ROOT, "public", "exports");
+    const exportsTmp = path.join(exportsDir, ".precheck-tmp");
+    try {
+      if (!fs.existsSync(exportsDir)) fs.mkdirSync(exportsDir, { recursive: true });
+      fs.writeFileSync(exportsTmp, "ok");
+      fs.unlinkSync(exportsTmp);
+      record("Local", "public/exports/ writable", "PASS", exportsDir);
+    } catch (e) {
+      record("Local", "public/exports/ writable", "FAIL",
+        e.message,
+        `Verification CSV exports are written to public/exports/.\nGrant write permission to:\n  ${exportsDir}`);
+    }
   }
 }
 
@@ -572,15 +593,22 @@ footer{text-align:center;color:#a0aec0;font-size:.75em;margin:36px 0 16px}
 
 async function main() {
   console.log(`\n  HealthLOQ Pre-Installation Check`);
-  console.log(`  ${"═".repeat(52)}`);
-  console.log(`  App root : ${APP_ROOT}`);
+  console.log(`  ${"=".repeat(52)}`);
+  console.log(`  App root : ${APP_ROOT || "(pre-install mode — no app found)"}`);
   console.log(`  Platform : ${os.platform()} ${os.arch()} (${os.release()})`);
   console.log(`  Node.js  : v${process.versions.node}`);
   console.log(`  Date     : ${new Date().toLocaleString()}\n`);
 
-  // Load .env — values from the file take precedence over system env for display
-  const dotenv = loadDotEnv(path.join(APP_ROOT, ".env"));
-  const env    = { ...process.env, ...dotenv };
+  // Load .env — check script's own directory first (standalone mode), then app root.
+  // Values from the file take precedence over system env for display purposes.
+  const envCandidates = [
+    path.join(__dirname, "precheck.env"),
+    path.join(__dirname, ".env"),
+    ...(APP_ROOT ? [path.join(APP_ROOT, ".env")] : []),
+  ];
+  const envPath = envCandidates.find((p) => fs.existsSync(p)) || null;
+  const dotenv  = envPath ? loadDotEnv(envPath) : {};
+  const env     = { ...process.env, ...dotenv };
 
   // Run all checks
   checkNodeEnvironment();
