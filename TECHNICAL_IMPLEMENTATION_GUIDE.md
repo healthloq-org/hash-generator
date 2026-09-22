@@ -91,7 +91,7 @@ No additional ports, inbound rules, or VPN configurations are necessary.
 
 **Installation Process:** Step-by-step instructions for installing the Document Protection and Document Verification applications are available through the HealthLOQ partner portal:
 
-> https://partner.healthloq.com/doc-tool-guide
+> https://producer.healthloq.com/doc-tool-guide
 
 When a user logs in via the partner portal to either the Document Protection or Document Verification landing page, a "Setup Guide" button provides detailed installation instructions. A Windows installer is also available for download through the partner portal for simplified deployment.
 
@@ -113,7 +113,7 @@ ROOT_FOLDER_PATH="./documents"
 REACT_APP_API_BASE_URL="http://localhost:8003"
 REACT_APP_JWT_TOKEN=<your-jwt-token>
 REACT_APP_HEALTHLOQ_API_BASE_URL="https://api.healthloq.com"
-REACT_APP_HEALTHLOQ_ORGANIZATION_APP_BASE_URL="https://partner.healthloq.com"
+REACT_APP_HEALTHLOQ_ORGANIZATION_APP_BASE_URL="https://producer.healthloq.com"
 REACT_APP_HEALTHLOQ_CONSUMER_APP_BASE_URL="https://www.healthloq.com"
 
 # Optional: Email alerts
@@ -316,7 +316,7 @@ Files are validated by both extension and MIME type to prevent spoofing.
 
 **Technical Support Channels:** HealthLOQ support teams are available to provide assistance to subscribing organizations. Support may be accessed through the partner portal at:
 
-> https://partner.healthloq.com
+> https://producer.healthloq.com
 
 **Knowledge Base and Documentation:** Comprehensive documentation, installation guides, and setup walkthroughs are available through the partner portal. The open-source repository also contains a detailed README covering architecture, configuration, and API reference.
 
@@ -352,7 +352,7 @@ With a focus on ease of deployment (hours, not weeks), minimal system requiremen
 
 **Next Steps:** The first step to participating in the HealthLOQ ecosystem is to register your organization via the HealthLOQ Partner Portal and subscribe to one of the HealthLOQ offerings. A JWT token for the Document Tool can be generated immediately upon subscription.
 
-> https://partner.healthloq.com
+> https://producer.healthloq.com
 
 ---
 
