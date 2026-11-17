@@ -10,7 +10,7 @@ const {
   isRefreshing,
   refreshMetadataCache,
 } = require("../services/metadataCache");
-const { getSyncData, stopService, startService, restartService } = require("../utils");
+const { getSyncData, stopService, startService, restartService, setDocumentSyncInterval } = require("../utils");
 const alertSvc = require("../services/alertService");
 const logger = require("../logger");
 
@@ -71,6 +71,9 @@ exports.forceSync = (req, res) => {
       return res.json({ status: "1", message: "Sync already in progress" });
     }
     getSyncData();
+    if (!global.documentSyncInterval) {
+      setDocumentSyncInterval();
+    }
     res.json({ status: "1", message: "Sync started" });
   } catch (err) {
     logger.error({ err }, "health/forceSync failed");

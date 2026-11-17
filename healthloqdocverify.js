@@ -1,5 +1,6 @@
 require("dotenv").config();
 const express = require("express");
+const { execSync } = require("child_process");
 const port = process.env.PORT || 7001;
 const app = express();
 const cors = require("cors");
@@ -87,6 +88,58 @@ app.use("/api/health", require("./routes/health"));
 app.use(express.static(path.join(__dirname, "client/build")));
 app.get("*", (req, res) => {
   res.sendFile(path.resolve(__dirname, "client/build/index.html"));
+});
+
+function killProcessOnPort(targetPort) {
+  try {
+    if (process.platform === "win32") {
+      const output = execSync("netstat -ano", { encoding: "utf8" });
+      const pids = new Set();
+      for (const line of output.split("\n")) {
+        if (line.includes(`:${targetPort}`) && line.includes("LISTENING")) {
+          const parts = line.trim().split(/\s+/);
+          const pid = parts[parts.length - 1];
+          if (pid && /^\d+$/.test(pid) && pid !== "0" && pid !== String(process.pid)) {
+            pids.add(pid);
+          }
+        }
+      }
+      for (const pid of pids) {
+        try {
+          execSync(`taskkill /PID ${pid} /F`, { encoding: "utf8" });
+          logger.info(`Killed orphaned process PID ${pid} on port ${targetPort}`);
+        } catch (killErr) {
+          logger.warn(`Failed to kill PID ${pid}: ${killErr.message}`);
+        }
+      }
+    } else {
+      try {
+        execSync(`lsof -ti :${targetPort} | xargs kill -9`, { shell: true, encoding: "utf8" });
+        logger.info(`Killed orphaned processes on port ${targetPort}`);
+      } catch (_) {}
+    }
+  } catch (err) {
+    logger.warn({ err }, "killProcessOnPort error");
+  }
+}
+
+let portRetryCount = 0;
+
+server.on("error", (err) => {
+  if (err.code === "EADDRINUSE" && portRetryCount < 1) {
+    portRetryCount++;
+    logger.warn(`Port ${port} already in use — killing orphaned process and retrying...`);
+    killProcessOnPort(port);
+    setTimeout(() => {
+      server.listen(port, () => {
+        logger.info(`Server running at http://localhost:${port}`);
+        startAlertChecker();
+      });
+    }, 2000);
+  } else {
+    logger.error({ err }, "Fatal server error — port unavailable");
+    process.exit(1);
+  }
 });
 
 server.listen(port, () => {

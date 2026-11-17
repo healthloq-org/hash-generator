@@ -2,8 +2,8 @@ const fs = require("fs");
 const path = require("path");
 const { syncHash, getSubscriptionDetail, syncDocToolLogs, publisherScriptIsRunningOrNot } = require("../services/healthloq");
 const { scanDirectory } = require("../services/fileScanner");
-const { hashFile } = require("../services/hasher");
-const { logSuccess, logFailure } = require("../services/healthMetrics");
+const { hashFile, hashFileSync } = require("../services/hasher");
+const { logSuccess, logFailure, getFailedFiles } = require("../services/healthMetrics");
 const { isEqual } = require("date-fns");
 const logger = require("../logger");
 const packageJson = require("../package.json");
@@ -114,10 +114,10 @@ exports.generateHashForVerifier = async (
 
       let hash;
       try {
-        hash = hashFile(entry.filePath);
+        hash = await hashFile(entry.filePath);
       } catch (err) {
         unreadFiles.push(entry.filePath);
-        logFailure({ path: entry.filePath, fileName: entry.name, errorCode: "FILE_READ_ERROR", errorMessage: err.message });
+        logFailure({ path: entry.filePath, fileName: entry.name, errorCode: err.code || "FILE_READ_ERROR", errorMessage: err.message });
         continue;
       }
 
@@ -174,10 +174,10 @@ exports.generateHashForPublisher = async (
 
       let hash;
       try {
-        hash = hashFile(entry.filePath);
+        hash = await hashFile(entry.filePath);
       } catch (err) {
         logger.warn({ filePath: entry.filePath, err }, "generateHashForPublisher: cannot read file");
-        logFailure({ path: entry.filePath, fileName: entry.name, errorCode: "FILE_READ_ERROR", errorMessage: err.message });
+        logFailure({ path: entry.filePath, fileName: entry.name, errorCode: err.code || "FILE_READ_ERROR", errorMessage: err.message });
         continue;
       }
 
@@ -217,7 +217,7 @@ exports.generateHashForPublisher = async (
 
 exports.generateHashFromFileName = (filePath = "", file) => {
   const state = fs.statSync(filePath);
-  const hash = hashFile(filePath);
+  const hash = hashFileSync(filePath);
   return { fileName: file.name, hash, path: filePath, state, createdAt: new Date() };
 };
 
@@ -391,6 +391,7 @@ exports.getSyncData = async (syncedData = null) => {
       localStorage.setItem("staticData", JSON.stringify({ lastSyncedDate: new Date() }));
     }
   } catch (err) {
+    global.isGetSyncDataProcessStart = false;
     logger.error({ err }, "getSyncData: unexpected error");
     syncDocToolLogs({
       message: "getSyncData => unexpected error",
@@ -415,6 +416,40 @@ exports.setDocumentSyncTimeout = () => {
   }, 6 * 1000); // 6 seconds debounce
 };
 
+// Checks whether previously-failed files are now readable (e.g. after OneDrive
+// hydrates a placeholder) and triggers a sync if any have become accessible.
+// Needed because OneDrive's Cloud Files API does not emit standard file-system
+// change events that chokidar can detect during hydration.
+exports.retryAccessibleFailedFiles = async () => {
+  try {
+    const failed = getFailedFiles();
+    if (!failed.length) return;
+
+    const nowAccessible = failed.filter(({ file_path }) => {
+      try {
+        const stat = fs.statSync(file_path);
+        if (stat.size === 0) return true;
+        const fd = fs.openSync(file_path, "r");
+        const buf = Buffer.alloc(1);
+        fs.readSync(fd, buf, 0, 1, 0);
+        fs.closeSync(fd);
+        return true;
+      } catch (_) {
+        return false;
+      }
+    });
+
+    if (nowAccessible.length > 0) {
+      logger.info(`retryAccessibleFailedFiles: ${nowAccessible.length} previously-failed file(s) now accessible — triggering sync`);
+      if (!global.isGetSyncDataProcessStart) {
+        this.getSyncData();
+      }
+    }
+  } catch (err) {
+    logger.warn({ err }, "retryAccessibleFailedFiles error");
+  }
+};
+
 exports.setDocumentSyncInterval = () => {
   if (global.documentSyncInterval) clearInterval(global.documentSyncInterval);
   const INTERVAL_MS = 5 * 60 * 1000;
@@ -432,6 +467,8 @@ exports.setDocumentSyncInterval = () => {
       is_running: global.isGetSyncDataProcessStart,
       doc_tool_version: packageJson.version,
     });
+    // Retry failed files that may now be accessible (e.g. OneDrive hydration)
+    await this.retryAccessibleFailedFiles();
   }, INTERVAL_MS); // 5-minute fallback heartbeat
 };
 

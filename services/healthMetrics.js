@@ -3,6 +3,7 @@
  * All date arithmetic done in JS using date-fns so there are no
  * SQLite strftime / locale mismatches.
  */
+const fs = require("fs");
 const path = require("path");
 const {
   subDays, subWeeks, subMonths, subYears,
@@ -173,7 +174,8 @@ exports.getFailedFiles = () =>
        ORDER BY pl.processed_at DESC
        LIMIT 200`
     )
-    .all();
+    .all()
+    .filter((row) => fs.existsSync(row.file_path));
 
 // ── Reprocess: remove files from publisher cache so next sync picks them up ─
 

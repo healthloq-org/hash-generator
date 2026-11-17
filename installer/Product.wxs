@@ -5,7 +5,7 @@
 
   <Package Name="HealthLOQ Document Hash Generator"
            Manufacturer="HealthLOQ"
-           Version="1.1.0"
+           Version="1.1.2"
            UpgradeCode="A3F1C2D4-5E6F-7A8B-9C0D-E1F2A3B4C5D6"
            Compressed="yes">
 
